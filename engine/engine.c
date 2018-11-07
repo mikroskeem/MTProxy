@@ -628,6 +628,11 @@ int default_main (server_functions_t *F, int argc, char *argv[]) {
 
   vkprintf (3, "Command line parsed\n");
 
+  for(int i = 1; i < argc; i++) {
+    size_t arglen = strlen(argv[i]);
+    memset(argv[i], '\0', arglen);
+  }
+
   F->pre_start ();
   
   start_time = time (NULL);
