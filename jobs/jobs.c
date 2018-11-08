@@ -36,7 +36,6 @@
 #include <malloc.h>
 #include <sys/syscall.h>
 #include <math.h>
-#include <linux/futex.h>
 
 #include "common/proc-stat.h"
 #include "crc32.h"
