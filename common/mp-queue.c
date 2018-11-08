@@ -32,8 +32,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#if !MPQ_USE_POSIX_SEMAPHORES
 #include <linux/futex.h>
 #include <sys/syscall.h>
+#endif
 
 #include "server-functions.h"
 #include "kprintf.h"
@@ -117,7 +119,7 @@ int get_this_thread_id (void) {
 }
 
 /* custom semaphore implementation using futexes */
-
+#if !MPQ_USE_POSIX_SEMAPHORES
 int mp_sem_post (mp_sem_t *sem) {
   __sync_fetch_and_add (&sem->value, 1);
   if (sem->waiting > 0) {
@@ -161,7 +163,7 @@ int mp_sem_trywait (mp_sem_t *sem) {
   }
   return -1;
 }
-
+#endif
 /* functions for one mp_queue_block */
 
 // may invoke mpq_pop()/mpq_push() if allow_recursion=1
@@ -174,7 +176,7 @@ struct mp_queue_block *alloc_mpq_block (mqn_value_t first_val, int allow_recursi
     if (QB) {
       if (!is_hazard_ptr (QB, 0, 2)) {
 	// reclaiming garbage
-	assert (QB->mqb_magic == MQ_BLOCK_GARBAGE_MAGIC); 
+	assert (QB->mqb_magic == MQ_BLOCK_GARBAGE_MAGIC);
 	__sync_fetch_and_add (&mpq_blocks_wasted, -1);
 	align_bytes = QB->mqb_align_bytes;
       } else {
@@ -185,7 +187,7 @@ struct mp_queue_block *alloc_mpq_block (mqn_value_t first_val, int allow_recursi
     if (!QB) {
       QB = mpq_pop (is_small ? &MqPreparedSmallBlocks : &MqPreparedBlocks, MPQF_RECURSIVE);
       if (QB) {
-	assert (QB->mqb_magic == MQ_BLOCK_PREPARED_MAGIC); 
+	assert (QB->mqb_magic == MQ_BLOCK_PREPARED_MAGIC);
 	prepared = 1;
 	__sync_fetch_and_add (&mpq_blocks_prepared, -1);
 	align_bytes = QB->mqb_align_bytes;
@@ -266,7 +268,7 @@ static inline void mpq_fix_state (struct mp_queue_block *QB) {
     if (QB->mqb_tail != t) {
       continue;
     }
-    // here tail < head ; try to advance tail to head 
+    // here tail < head ; try to advance tail to head
     // (or to some value h such that tail < h <= head)
     if (__sync_bool_compare_and_swap (&QB->mqb_tail, t, h)) {
       break;
@@ -380,7 +382,7 @@ void init_mp_queue (struct mp_queue *MQ) {
   } else if (!MqPreparedBlocks.mq_magic) {
     init_mp_queue (&MqPreparedBlocks);
     init_mp_queue (&MqPreparedSmallBlocks);
-  }    
+  }
 }
 
 void init_mp_queue_w (struct mp_queue *MQ) {
@@ -528,7 +530,7 @@ int mpq_is_empty (struct mp_queue *MQ) {
   return 0;
 }
 
-/* may invoke mpq_alloc_block (which recursively invokes mpq_pop) 
+/* may invoke mpq_alloc_block (which recursively invokes mpq_pop)
    or mpq_push() (without needing to hold hazard pointer) to deal with blocks */
 long mpq_push (struct mp_queue *MQ, mqn_value_t val, int flags) {
   void **hptr = mqb_hazard_ptr[get_this_thread_id()];
@@ -576,7 +578,7 @@ long mpq_push (struct mp_queue *MQ, mqn_value_t val, int flags) {
       assert (!hptr[1]);
     } else {
       NQB = alloc_mpq_block (val, 0, is_small);
-    }    
+    }
     assert (hptr[r] == QB);
     DBG('D')
     if (__sync_bool_compare_and_swap (&QB->mqb_next, 0, NQB)) {
@@ -669,7 +671,7 @@ long mpq_push_w (struct mp_queue *MQ, mqn_value_t v, int flags) {
 void *get_ptr_multithread_copy (void **ptr, void (*incref)(void *ptr)) {
   void **hptr = &mqb_hazard_ptr[get_this_thread_id()][COMMON_HAZARD_PTR_NUM];
   assert (*hptr == NULL);
- 
+
   void *R;
   while (1) {
     R = *ptr;
@@ -683,10 +685,10 @@ void *get_ptr_multithread_copy (void **ptr, void (*incref)(void *ptr)) {
     }
 
     incref (R);
-    
+
     barrier ();
     *hptr = NULL;
-    
+
     break;
   }
   return R;

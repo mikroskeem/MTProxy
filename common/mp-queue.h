@@ -21,7 +21,9 @@
 
 #pragma once
 
+#ifndef MPQ_USE_POSIX_SEMAPHORES
 #define MPQ_USE_POSIX_SEMAPHORES	0
+#endif
 
 #if MPQ_USE_POSIX_SEMAPHORES
 #include <semaphore.h>
