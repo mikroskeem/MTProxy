@@ -40,6 +40,7 @@ DEPENDENCE_STRANGE	:=	$(subst ${OBJ}/,${DEP}/,$(patsubst %.o,%.d,${OBJECTS_STRAN
 DEPENDENCE_NORM	:=	$(subst ${OBJ}/,${DEP}/,$(patsubst %.o,%.d,${OBJECTS}))
 
 LIB_OBJS_NORMAL := \
+	${OBJ}/common/randr_compat.o \
 	${OBJ}/common/crc32c.o \
 	${OBJ}/common/pid.o \
 	${OBJ}/common/sha1.o \

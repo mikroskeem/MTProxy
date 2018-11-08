@@ -28,6 +28,8 @@
 #include "net/net-msg.h"
 #include "net/net-timers.h"
 
+#include "common/randr_compat.h"
+
 #define __joblocked
 #define __jobref
 
