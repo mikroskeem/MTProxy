@@ -12,21 +12,23 @@ LIBEXECINFO_SRC="${BUILDROOT}/libexecinfo-src.tar.gz"
 export CC="musl-gcc"
 
 # Set up libraries for musl libc
-if [ ! -d "${BUILDROOT}" ]; then
+if [ ! -d "${BUILDROOT}" ] || [ "${1}" = "buildroot" ]; then
     mkdir -p "${BUILDROOT}"
+    rm -rf "${BUILDROOT}"/*/
 
     # Download
-    curl -o "${LIBRESSL_SRC}" "${LIBRESSL_URL}"
-    curl -o "${ZLIB_SRC}" "${ZLIB_URL}"
-    curl -L -o "${LIBEXECINFO_SRC}" "${LIBEXECINFO_URL}"
+    [ -f "${LIBRESSL_SRC}" ] || curl -o "${LIBRESSL_SRC}" "${LIBRESSL_URL}"
+    [ -f "${ZLIB_SRC}" ] || curl -o "${ZLIB_SRC}" "${ZLIB_URL}"
+    [ -f "${LIBEXECINFO_SRC}" ] || curl -L -o "${LIBEXECINFO_SRC}" "${LIBEXECINFO_URL}"
 
     # Build LibreSSL
     cd "${BUILDROOT}" || exit 1
     tar xvf "${LIBRESSL_SRC}"
     cd libressl-*/ || exit 1
 
-    (mkdir build && cd build) || exit 1;
-    ./configure --prefix="${BUILDROOT}"
+    mkdir build && cd build || exit 1;
+    ../configure --prefix="${BUILDROOT}" \
+        --with-openssldir=/etc/ssl
     make -j"$(grep -c ^processor /proc/cpuinfo)"
     make install
 
@@ -35,8 +37,8 @@ if [ ! -d "${BUILDROOT}" ]; then
     tar xvf "${ZLIB_SRC}"
     cd zlib-*/ || exit 1
 
-    (mkdir build && cd build) || exit 1;
-    ./configure --prefix="${BUILDROOT}"
+    mkdir build && cd build || exit 1;
+    ../configure --prefix="${BUILDROOT}"
     make -j"$(grep -c ^processor /proc/cpuinfo)"
     make install
 
@@ -45,7 +47,6 @@ if [ ! -d "${BUILDROOT}" ]; then
     tar xvf "${LIBEXECINFO_SRC}"
     cd libexecinfo-*/ || exit 1
 
-    (mkdir build && cd build) || exit 1;
     CFLAGS="-fno-omit-frame-pointer" make -j"$(grep -c ^processor /proc/cpuinfo)" all
     make DESTDIR="${BUILDROOT}" install
 
@@ -57,6 +58,8 @@ if [ ! -d "${BUILDROOT}" ]; then
 
     cd "${BUILDROOT}/.." || exit 1
 fi
+
+[ "${1}" = "buildroot" ] && exit 0
 
 export CC="musl-gcc -static -L\"${BUILDROOT}/lib\" -I\"${BUILDROOT}/include\" -DMPQ_USE_POSIX_SEMAPHORES=1"
 make EXTRA_LDFLAGS="-lexecinfo" \
