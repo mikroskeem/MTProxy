@@ -58,6 +58,6 @@ if [ ! -d "${BUILDROOT}" ]; then
     cd "${BUILDROOT}/.." || exit 1
 fi
 
-export CC="musl-gcc -lexecinfo -static -L\"${BUILDROOT}/lib\" -I\"${BUILDROOT}/include\" -DMPQ_USE_POSIX_SEMAPHORES=1"
+export CC="musl-gcc -static -L\"${BUILDROOT}/lib\" -I\"${BUILDROOT}/include\" -DMPQ_USE_POSIX_SEMAPHORES=1"
 make EXTRA_LDFLAGS="-lexecinfo" \
     -j"$(grep -c ^processor /proc/cpuinfo)"
