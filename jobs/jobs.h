@@ -28,7 +28,9 @@
 #include "net/net-msg.h"
 #include "net/net-timers.h"
 
+#ifndef __GLIBC__
 #include "common/randr_compat.h"
+#endif
 
 #define __joblocked
 #define __jobref
